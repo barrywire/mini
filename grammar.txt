@@ -1,0 +1,24 @@
+# Identifiers
+<identifier> ::= <char> { <char>* | '_' | <char> }
+<char> ::= <letter_uppercase> | <letter_lowercase> | <letter_titlecase> | <letter_camelcase>
+<letter_uppercase> ::= "A" ... "Z"
+<letter_lowercase> ::= "a" ... "z"
+
+
+
+
+
+# Keywords
+# Numbers
+# Strings
+# Operators
+# Expressions
+    # Arithmetic expression
+    # Comparison expression
+    # Assignment expression
+# Control Structures
+    # While ... Then
+    # If ... Then
+    # If ... Then ... Else
+    # If ... Then ... Elif
+
