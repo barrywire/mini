@@ -1,7 +1,14 @@
 ######################################################################
+# IMPORTS
+######################################################################
+import string
+
+######################################################################
 # CONSTANTS
 ######################################################################
 DIGITS = '0123456789'
+LETTERS = string.ascii_letters
+LETTERS_DIGITS = LETTERS + DIGITS
 
 ######################################################################
 # ERRORS
@@ -23,7 +30,7 @@ class Error:
 
 class IllegalCharError(Error):
     def __init__(self, pos_start, pos_end, details):
-        super().__init__( pos_start, pos_end, 'Illegal Character', details)
+        super().__init__(pos_start, pos_end, 'Illegal Character', details)
 
 
 ######################################################################
@@ -60,16 +67,37 @@ class Position:
 
 TT_INT = 'INT'
 TT_FLOAT = 'FLOAT'
+TT_IDENTIFIER = 'IDENTIFIER'
+TT_KEYWORD = 'KEYWORD'
 TT_PLUS = 'PLUS'
 TT_MINUS = 'MINUS'
 TT_MUL = 'MUL'
 TT_DIV = 'DIV'
+TT_EQ = 'EQ'
 TT_LPAREN = 'LPAREN'
 TT_RPAREN = 'RPAREN'
 
 
+KEYWORDS = [
+    'VAR',
+    'AND',
+    'OR',
+    'IF',
+    'ELIF',
+    'ELSE',
+    'FOR',
+    'TO',
+    'WHILE',
+    'FUN',
+    'THEN',
+    'RETURN',
+    'CONTINUE',
+    'BREAK',
+]
+
+
 class Token:
-    def __init__(self, type_, value=None):
+    def __init__(self, type_, value=None, pos_start=None, pos_end=None):
         self.type = type_
         self.value = value
 
@@ -105,6 +133,8 @@ class Lexer:
                 self.advance()
             elif self.current_char in DIGITS:
                 tokens.append(self.make_number())
+            elif self.current_char in LETTERS:
+                tokens.append(self.make_identifier())
             elif self.current_char == '+':
                 tokens.append(Token(TT_PLUS))
                 self.advance()
@@ -117,13 +147,15 @@ class Lexer:
             elif self.current_char == '/':
                 tokens.append(Token(TT_DIV))
                 self.advance()
+            elif self.current_char == '=':
+                tokens.append(Token(TT_EQ))
+                self.advance()
             elif self.current_char == '(':
                 tokens.append(Token(TT_LPAREN))
                 self.advance()
             elif self.current_char == ')':
                 tokens.append(Token(TT_RPAREN))
                 self.advance()
-
             else:
                 pos_start = self.pos.copy()
                 char = self.current_char
@@ -150,6 +182,17 @@ class Lexer:
             return Token(TT_INT, int(num_str))
         else:
             return Token(TT_FLOAT, float(num_str))
+
+    def make_identifier(self):
+        identifier_str = ''
+        pos_start = self.pos.copy()
+
+        while self.current_char != None and self.current_char in LETTERS_DIGITS + '_':
+            identifier_str += self.current_char
+            self.advance()
+
+        token_type = TT_KEYWORD if identifier_str in KEYWORDS else TT_IDENTIFIER
+        return Token(token_type, identifier_str, pos_start, self.pos)
 
 ######################################################################
 # RUN
