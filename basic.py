@@ -72,6 +72,7 @@ class Position:
 
 TT_INT = 'INT'
 TT_FLOAT = 'FLOAT'
+TT_STRING = 'STRING'
 TT_IDENTIFIER = 'IDENTIFIER'
 TT_KEYWORD = 'KEYWORD'
 TT_PLUS = 'PLUS'
@@ -90,6 +91,7 @@ TT_GTE = 'GTE'
 TT_COMMA = 'COMMA'
 TT_ARROW = 'ARROW'
 TT_NEWLINE = 'NEWLINE'
+TT_EOF = 'EOF'
 
 
 KEYWORDS = [
@@ -156,6 +158,8 @@ class Lexer:
                 tokens.append(self.make_number())
             elif self.current_char in LETTERS:
                 tokens.append(self.make_identifier())
+            elif self.current_char == '"':
+                tokens.append(self.make_string())
             # To modify once parser is implemented
             elif self.current_char in KEYWORDS:
                 tokens.append(self.make_keyword())
@@ -202,6 +206,7 @@ class Lexer:
                 self.advance()
                 return [], IllegalCharError(pos_start, self.pos, "'" + char + "'")
 
+        tokens.append(Token(TT_EOF, pos_start=self.pos))
         return tokens, None
 
     def make_number(self):
@@ -223,6 +228,32 @@ class Lexer:
         else:
             return Token(TT_FLOAT, float(num_str))
 
+    def make_string(self):
+        string = ''
+        pos_start = self.pos.copy()
+
+        escape_character = False
+
+        self.advance()
+
+        escape_characters = {
+            'n': '\n',
+            't': '\t'
+        }
+
+        while self.current_char != None and (self.current_char != '"' or escape_character):
+        # while self.current_char != None and self.current_char != '"':
+            if escape_character:
+                string += escape_characters.get(self.current_char, self.current_char)
+                escape_character = False
+            else:
+                if self.current_char == '\\':
+                    escape_character = True
+                else:
+                    string += self.current_char
+            self.advance()
+        return Token(TT_STRING, string, pos_start, self.pos)
+
     def make_identifier(self):
         identifier_str = ''
         pos_start = self.pos.copy()
@@ -242,7 +273,7 @@ class Lexer:
         if self.current_char == '>':
             self.advance()
             token_type = TT_ARROW
-            
+
         return Token(token_type, pos_start=pos_start, pos_end=self.pos)
 
     def make_not_equals(self):
