@@ -18,3 +18,14 @@ Coming soon...
 ## Mini Language - Interpreter
 
 Coming soon...
+
+## Running the code
+
+1. Clone the repository
+2. Run the shell.py file. It is the entry point of the compiler.
+
+```bash
+python3 shell.py
+```
+
+3. Enter the code to be interpreted in the terminal
