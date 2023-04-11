@@ -1,0 +1,4 @@
+# Add the pycache directory to the list of directories to ignore
+__pycache__/
+
+.wrongbasic.py
