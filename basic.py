@@ -353,7 +353,7 @@ class Lexer:
         return Token(TT_KEYWORD, keyword_str, pos_start, self.pos)
 
 ######################################################################
-# NODES
+# NODES - Nodes that build the Abstract Syntax Tree
 ######################################################################
 
 
@@ -373,6 +373,15 @@ class BinaryOpNode:
 
     def __repr__(self):
         return f'({self.left_node}, {self.op_token}, {self.right_node})'
+
+
+class UnaryOpNode:
+    def __init__(self, op_token, node):
+        self.op_token = op_token
+        self.node = node
+
+    def __repr__(self):
+        return f'({self.op_token}, {self.node})'
 
 
 ######################################################################
@@ -408,13 +417,34 @@ class Parser:
         res = ParseResult()
         token = self.current_token
 
-        if token.type in (TT_INT, TT_FLOAT):
+        if token.type in (TT_PLUS, TT_MINUS):
+            res.register(self.advance())
+            factor = res.register(self.factor())
+            if res.error:
+                return res
+            return res.success(UnaryOpNode(token, factor))
+
+        elif token.type in (TT_INT, TT_FLOAT):
             res.register(self.advance())
             return res.success(NumberNode(token))
 
+        elif token.type in (TT_LPAREN):
+            res.register(self.advance())
+            expr = res.register(self.expression())
+            if res.error:
+                return res
+            if self.current_token.type == TT_RPAREN:
+                res.register(self.advance())
+                return res.success(expr)
+            else:
+                return res.failure(InvalidSyntaxError(
+                    self.current_token.pos_start, self.current_token.pos_end,
+                    "Expected ')'"
+                ))
+
         return res.failure(InvalidSyntaxError(
             token.pos_start, token.pos_end,
-            "Expected an integer or float"
+            "Expected an integer or a float"
         ))
 
     def term(self):

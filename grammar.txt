@@ -16,7 +16,7 @@ OR
 NOT
 IF 
 THEN 
-ELIF 
+ELIF x
 ELSE 
 FOR 
 TO 
@@ -52,7 +52,7 @@ EOF
     # Arithmetic expression
         <arithmetic_expression> ::= <term> | "+"| "-"<term> 
         <term> ::= <factor> "*"|"/" <factor> 
-        <factor> ::= "+"| "-" <number> 
+        <factor> ::= "+"| "-" <number> | "(" <arithmetic_expression> ")" 
         <number> ::= <digit> | <float>
 
     # Comparison expression
