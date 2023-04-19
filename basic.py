@@ -90,6 +90,7 @@ TT_PLUS = 'PLUS'
 TT_MINUS = 'MINUS'
 TT_MUL = 'MUL'
 TT_DIV = 'DIV'
+TT_POW = 'POW'
 TT_EQ = 'EQ'
 TT_LPAREN = 'LPAREN'
 TT_RPAREN = 'RPAREN'
@@ -140,6 +141,9 @@ class Token:
         if pos_end:
             self.pos_end = pos_end
 
+    def matches(self, type_, value):
+        return self.type == type_ and self.value == value
+
     def __repr__(self):
         if self.value:
             return f'{self.type}:{self.value}'
@@ -183,25 +187,29 @@ class Lexer:
             elif self.current_char in KEYWORDS:
                 tokens.append(self.make_keyword())
             elif self.current_char == '+':
-                tokens.append(Token(TT_PLUS, pos_end=self.pos))
+                tokens.append(Token(TT_PLUS, pos_start=self.pos))
                 self.advance()
             elif self.current_char == '-':
                 tokens.append(self.make_minus_or_arrow())
                 self.advance()
             elif self.current_char == '*':
-                tokens.append(Token(TT_MUL, pos_end=self.pos))
+                tokens.append(Token(TT_MUL, pos_start=self.pos))
                 self.advance()
             elif self.current_char == '/':
-                tokens.append(Token(TT_DIV, pos_end=self.pos))
+                tokens.append(Token(TT_DIV, pos_start=self.pos))
+                self.advance()
+            elif self.current_char == '^':
+                tokens.append(Token(TT_POW, pos_start=self.pos))
                 self.advance()
             elif self.current_char == '=':
-                tokens.append(Token(TT_EQ))
+                tokens.append(Token(TT_EQ, pos_start=self.pos))
+                # tokens.append(Token(TT_EQ))
                 self.advance()
             elif self.current_char == '(':
-                tokens.append(Token(TT_LPAREN, pos_end=self.pos))
+                tokens.append(Token(TT_LPAREN, pos_start=self.pos))
                 self.advance()
             elif self.current_char == ')':
-                tokens.append(Token(TT_RPAREN, pos_end=self.pos))
+                tokens.append(Token(TT_RPAREN, pos_start=self.pos))
                 self.advance()
             elif self.current_char == ',':
                 tokens.append(Token(TT_COMMA))
@@ -361,8 +369,37 @@ class NumberNode:
     def __init__(self, token):
         self.token = token
 
+        self.pos_start = self.token.pos_start
+        self.pos_end = self.token.pos_end
+
     def __repr__(self):
         return f'{self.token}'
+
+
+class VariableAccessNode:
+    def __init__(self, variable_name_token):
+        self.variable_name_token = variable_name_token
+
+        self.pos_start = self.variable_name_token.pos_start
+        self.pos_end = self.variable_name_token.pos_end
+
+    def __repr__(self):
+        return f'{self.variable_name_token}'
+
+
+class VariableAssignmentNode:
+    def __init__(self, variable_name_token, value_node):
+        self.var_token = Token(TT_KEYWORD, 'VAR')
+        
+        
+        self.variable_name_token = variable_name_token
+        self.value_node = value_node
+
+        self.pos_start = self.variable_name_token.pos_start
+        self.pos_end = self.value_node.pos_end
+
+    def __repr__(self):
+        return f'{self.variable_name_token} {TT_EQ} {self.value_node}'
 
 
 class BinaryOpNode:
@@ -413,28 +450,27 @@ class Parser:
 
     # ====================================================================
 
-    def factor(self):
+    def atom(self):
         res = ParseResult()
         token = self.current_token
 
-        if token.type in (TT_PLUS, TT_MINUS):
-            res.register(self.advance())
-            factor = res.register(self.factor())
-            if res.error:
-                return res
-            return res.success(UnaryOpNode(token, factor))
-
-        elif token.type in (TT_INT, TT_FLOAT):
-            res.register(self.advance())
+        if token.type in (TT_INT, TT_FLOAT):
+            res.register_advancement()
+            self.advance()
             return res.success(NumberNode(token))
 
+        # There's an elif here for TT_IDENTIFIER, but it's not implemented yet.
+        # This is to enable use of variables in arithmetic expressions.
+
         elif token.type in (TT_LPAREN):
-            res.register(self.advance())
+            res.register_advancement()
+            self.advance()
             expr = res.register(self.expression())
             if res.error:
                 return res
             if self.current_token.type == TT_RPAREN:
-                res.register(self.advance())
+                res.register_advancement()
+                self.advance()
                 return res.success(expr)
             else:
                 return res.failure(InvalidSyntaxError(
@@ -444,26 +480,87 @@ class Parser:
 
         return res.failure(InvalidSyntaxError(
             token.pos_start, token.pos_end,
-            "Expected an integer or a float"
+            "Expected an integer, a float, an identifier, or '+', '-' or '('"
         ))
+
+    def power(self):
+        return self.binary_operation(self.atom, (TT_POW, ), self.factor)
+
+    def factor(self):
+        res = ParseResult()
+        token = self.current_token
+
+        if token.type in (TT_PLUS, TT_MINUS):
+            res.register_advancement()
+            self.advance()
+            factor = res.register(self.factor())
+            if res.error:
+                return res
+            return res.success(UnaryOpNode(token, factor))
+
+        elif token.type == TT_IDENTIFIER:
+            res.register_advancement()
+            self.advance()
+            return res.Cuccess(VariableAccessNode(token))
+
+        # return res.failure(InvalidSyntaxError(
+        #     token.pos_start, token.pos_end,
+        #     "Expected an integer or a float"
+        # ))
+
+        return self.power()
 
     def term(self):
         return self.binary_operation(self.factor, (TT_MUL, TT_DIV))
 
     def expression(self):
+        res = ParseResult()
+
+        if self.current_token.matches(TT_KEYWORD, 'VAR'):
+            res.register_advancement()
+            self.advance()
+
+            if self.current_token.type != TT_IDENTIFIER:
+                return res.failure(InvalidSyntaxError(
+                    self.current_token.pos_start, self.current_token.pos_end,
+                    "Expected identifier"
+                ))
+
+            variable_name = self.current_token
+            res.register_advancement()
+            self.advance()
+
+            if self.current_token.type != TT_EQ:
+                return res.failure(InvalidSyntaxError(
+                    self.current_token.pos_start, self.current_token.pos_end,
+                    "Expected '='"
+                ))
+
+            res.register_advancement()
+            self.advance()
+
+            expression = res.register(self.expression())
+            if res.error:
+                return res
+            return res.success(VariableAssignmentNode(variable_name, expression))
+
         return self.binary_operation(self.term, (TT_PLUS, TT_MINUS))
 
-    def binary_operation(self, func, operation_tokens):
+    def binary_operation(self, func_a, operation_tokens, func_b=None):
+        if func_b == None:
+            func_b = func_a
+
         res = ParseResult()
-        left = res.register(func())
+        left = res.register(func_a())
         if res.error:
             return res
 
         while self.current_token.type in operation_tokens:
             # token = self.current_token
             op_token = self.current_token
-            res.register(self.advance())
-            right = res.register(func())
+            res.register_advancement()
+            self.advance()
+            right = res.register(func_b())
             if res.error:
                 return res
             left = BinaryOpNode(left, op_token, right)
@@ -479,12 +576,14 @@ class ParseResult:
         self.error = None
         self.node = None
 
+    def register_advancement(self):
+        pass
+
+    # Used for parsing and parse results
     def register(self, res):
-        if isinstance(res, ParseResult):
-            if res.error:
-                self.error = res.error
-            return res.node
-        return res
+        if res.error:
+            self.error = res.error
+        return res.node
 
     def success(self, node):
         self.node = node
@@ -493,6 +592,27 @@ class ParseResult:
     def failure(self, error):
         self.error = error
         return self
+
+
+######################################################################
+# SYMBOL TABLE - To store variables
+######################################################################
+class SymbolTable:
+    def __init__(self):
+        self.symbols = {}
+        self.parent = None
+
+    def get(self, name):
+        value = self.symbols.get(name, None)
+        if value == None and self.parent:
+            return self.parent.get(name)
+        return value
+
+    def set(self, name, value):
+        self.symbols[name] = value
+
+    def remove(self, name):
+        del self.symbols[name]
 
 
 ######################################################################
