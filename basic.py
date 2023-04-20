@@ -390,8 +390,7 @@ class VariableAccessNode:
 class VariableAssignmentNode:
     def __init__(self, variable_name_token, value_node):
         self.var_token = Token(TT_KEYWORD, 'VAR')
-        
-        
+
         self.variable_name_token = variable_name_token
         self.value_node = value_node
 
@@ -501,7 +500,7 @@ class Parser:
         elif token.type == TT_IDENTIFIER:
             res.register_advancement()
             self.advance()
-            return res.Cuccess(VariableAccessNode(token))
+            return res.success(VariableAccessNode(token))
 
         # return res.failure(InvalidSyntaxError(
         #     token.pos_start, token.pos_end,
@@ -544,7 +543,17 @@ class Parser:
                 return res
             return res.success(VariableAssignmentNode(variable_name, expression))
 
-        return self.binary_operation(self.term, (TT_PLUS, TT_MINUS))
+        node = res.register(self.binary_operation(
+            self.comparison_expression, ((TT_KEYWORD, "AND"), (TT_KEYWORD, "OR"))))
+
+        if res.error:
+            return res.failure(InvalidSyntaxError(
+                self.current_token.pos_start, self.current_token.pos_end,
+                "Expected 'VAR', int, float, identifier, '+', '-', '(' or 'NOT'"
+            ))
+
+        # return self.binary_operation(self.term, (TT_PLUS, TT_MINUS))
+        return res.success(node)
 
     def binary_operation(self, func_a, operation_tokens, func_b=None):
         if func_b == None:
@@ -555,7 +564,7 @@ class Parser:
         if res.error:
             return res
 
-        while self.current_token.type in operation_tokens:
+        while self.current_token.type in operation_tokens or (self.current_token.type, self.current_token.value) in operation_tokens:
             # token = self.current_token
             op_token = self.current_token
             res.register_advancement()
@@ -566,6 +575,31 @@ class Parser:
             left = BinaryOpNode(left, op_token, right)
 
         return res.success(left)
+
+    def comparison_expression(self):
+        res = ParseResult()
+
+        if self.current_token.matches(TT_KEYWORD, 'NOT'):
+            op_token = self.current_token
+            res.register_advancement()
+            self.advance()
+
+            node = res.register(self.comparison_expression())
+            if res.error:
+                return res
+            return res.success(UnaryOpNode(op_token, node))
+
+        node = res.register(self.binary_operation(
+            self.arithmetic_expression,  (TT_EE, TT_NE, TT_LT, TT_GT, TT_LTE, TT_GTE)))
+        if res.error:
+            return res.failure(InvalidSyntaxError(
+                "Expected an integer, a float, an identifier, or '+', '-', '('  or 'NOT'"
+            ))
+        
+        return res.success(node)
+            
+    def arithmetic_expression(self):
+        return self.binary_operation(self.term, (TT_PLUS, TT_MINUS))
 
 
 ################################# #####################################
