@@ -407,6 +407,9 @@ class BinaryOpNode:
         self.op_token = op_token
         self.right_node = right_node
 
+        self.pos_start = self.left_node.pos_start
+        self.pos_end = self.right_node.pos_end
+
     def __repr__(self):
         return f'({self.left_node}, {self.op_token}, {self.right_node})'
 
@@ -420,9 +423,52 @@ class UnaryOpNode:
         return f'({self.op_token}, {self.node})'
 
 
+class IfNode:
+    def __init__(self, cases, else_case):
+        self.cases = cases
+        self.else_case = else_case
+
+        self.pos_start = self.cases[0][0].pos_start
+        self.pos_end = (self.else_case or self.cases[len(
+            self.cases) - 1][0]).pos_end
+
+    #     # TOKEN definitions for the representation method
+        self.if_token = Token(TT_KEYWORD, 'IF')
+        self.then_token = Token(TT_KEYWORD, 'THEN')
+        self.else_token = Token(TT_KEYWORD, 'ELSE')
+        self.elif_token = Token(TT_KEYWORD, 'ELIF')
+
+    def __repr__(self):
+        if self.else_case is not None:
+            # Start with the IF keyword and its condition
+                res = f"({self.if_token}, {self.cases[0][0]}) "
+                
+                # Add the THEN keyword and its statement
+                res += f"({self.then_token}, {self.cases[0][1]}) "
+
+                # Add all the ELIF keywords, their conditions, and their statements
+                for case in self.cases[1:]:
+                    res += f"({self.elif_token}, {case[0]}) "
+                    res += f"({self.then_token}, {case[1]}) "
+                
+                # Add the ELSE keyword and its statement
+                res += f"({self.else_token}, {self.else_case})"
+        else:
+                # Start with the IF keyword and its condition
+                res = f"({self.if_token}, {self.cases[0][0]}) "
+                
+                # Add the THEN keyword and its statement
+                res += f"({self.then_token}, {self.cases[0][1]}) "
+                
+                # Add all the ELIF keywords and their conditions
+                for case in self.cases[1:]:
+                    res += f"({self.elif_token}, {case[0]}) "
+        return res
+
 ######################################################################
 # PARSER
 ######################################################################
+
 
 class Parser:
     def __init__(self, tokens):
@@ -476,11 +522,90 @@ class Parser:
                     self.current_token.pos_start, self.current_token.pos_end,
                     "Expected ')'"
                 ))
+        elif token.matches(TT_KEYWORD, 'IF'):
+            if_expression = res.register(self.if_expression())
+            if res.error:
+                return res
+            return res.success(if_expression)
 
         return res.failure(InvalidSyntaxError(
             token.pos_start, token.pos_end,
             "Expected an integer, a float, an identifier, or '+', '-' or '('"
         ))
+
+    # =============================================================================
+
+    def if_expression(self):
+        res = ParseResult()
+
+        cases = []
+        else_case = None
+
+        if not self.current_token.matches(TT_KEYWORD, 'IF'):
+            return res.failure(InvalidSyntaxError(
+                self.current_token.pos_start, self.current_token.pos_end,
+                f"Expected 'IF'"
+            ))
+
+        res.register_advancement()
+        self.advance()
+
+        condition = res.register(self.expression())
+        if res.error:
+            return res
+
+        if not self.current_token.matches(TT_KEYWORD, 'THEN'):
+            return res.failure(InvalidSyntaxError(
+                self.current_token.pos_start, self.current_token.pos_end,
+                f"Expected 'THEN'"
+            ))
+
+        res.register_advancement()
+        self.advance()
+
+        expression = res.register(self.expression())
+        if res.error:
+            return res
+        cases.append((condition, expression))
+
+        while self.current_token.matches(TT_KEYWORD, 'ELIF'):
+            res.register_advancement()
+            self.advance()
+
+            condition = res.register(self.expression())
+
+            if res.error:
+                return res
+
+            if not self.current_token.matches(TT_KEYWORD, 'THEN'):
+                return res.failure(InvalidSyntaxError(
+                    self.current_token.pos_start, self.current_token.pos_end,
+                    f"Expected 'THEN'"
+                ))
+
+            res.register_advancement()
+            self.advance()
+
+            expression = res.register(self.expression())
+            if res.error:
+                return res
+            cases.append((condition, expression))
+
+        if self.current_token.matches(TT_KEYWORD, 'ELSE'):
+            res.register_advancement()
+            self.advance()
+
+            else_case = res.register(self.expression())
+            if res.error:
+                return res
+        # MIGHT BE BUGGY
+        elif self.current_token.type != TT_EOF:
+            return res.failure(InvalidSyntaxError(
+                self.current_token.pos_start, self.current_token.pos_end,
+                f"Expected 'ELSE' or 'EOF'"
+            ))
+
+        return res.success(IfNode(cases, else_case))
 
     def power(self):
         return self.binary_operation(self.atom, (TT_POW, ), self.factor)
@@ -501,11 +626,6 @@ class Parser:
             res.register_advancement()
             self.advance()
             return res.success(VariableAccessNode(token))
-
-        # return res.failure(InvalidSyntaxError(
-        #     token.pos_start, token.pos_end,
-        #     "Expected an integer or a float"
-        # ))
 
         return self.power()
 
@@ -595,9 +715,9 @@ class Parser:
             return res.failure(InvalidSyntaxError(
                 "Expected an integer, a float, an identifier, or '+', '-', '('  or 'NOT'"
             ))
-        
+
         return res.success(node)
-            
+
     def arithmetic_expression(self):
         return self.binary_operation(self.term, (TT_PLUS, TT_MINUS))
 
@@ -652,7 +772,6 @@ class SymbolTable:
 ######################################################################
 # RUN
 ######################################################################
-
 
 def run(file_name, text):
     # Generate tokens

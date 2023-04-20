@@ -60,7 +60,7 @@ EOF
         <term> ::= <factor> "*"|"/" <factor> 
         <factor> ::= "+"| "-" <number> | <power>
         <power> ::= <atom> ("^" <factor>) 
-        <atom> ::= <number> | "(" <expression> ")" 
+        <atom> ::= <number> | "(" <expression> ")" | <if_then>
         <number> ::= <digit> | <float>
 
     # Comparison expression
@@ -73,7 +73,7 @@ EOF
         <logical_expression> ::= <comparison_expression> | NOT <comparison_expression>
 
 # Control Structures
-    # While ... Then
+    # While ... Then     
         <while_then> ::= WHILE <expression> THEN <statement>
     # If ... Then
         <if_then> ::= IF <expression> THEN <statement> | <else_if> | <else>
