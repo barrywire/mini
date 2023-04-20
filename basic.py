@@ -117,7 +117,7 @@ KEYWORDS = [
     'ELSE',
     'FOR',
     'TO',
-    'FOR',
+    'STEP',
     'WHILE',
     'FUN',
     'THEN',
@@ -441,29 +441,65 @@ class IfNode:
     def __repr__(self):
         if self.else_case is not None:
             # Start with the IF keyword and its condition
-                res = f"({self.if_token}, {self.cases[0][0]}) "
-                
-                # Add the THEN keyword and its statement
-                res += f"({self.then_token}, {self.cases[0][1]}) "
+            res = f"({self.if_token}, {self.cases[0][0]}) "
 
-                # Add all the ELIF keywords, their conditions, and their statements
-                for case in self.cases[1:]:
-                    res += f"({self.elif_token}, {case[0]}) "
-                    res += f"({self.then_token}, {case[1]}) "
-                
+            # Add the THEN keyword and its statement
+            res += f"({self.then_token}, {self.cases[0][1]}) "
+
+            # Add all the ELIF keywords, their conditions, and their statements
+            for case in self.cases[1:]:
+                res += f"({self.elif_token}, {case[0]}) "
+                res += f"({self.then_token}, {case[1]}) "
+
                 # Add the ELSE keyword and its statement
                 res += f"({self.else_token}, {self.else_case})"
         else:
-                # Start with the IF keyword and its condition
-                res = f"({self.if_token}, {self.cases[0][0]}) "
-                
-                # Add the THEN keyword and its statement
-                res += f"({self.then_token}, {self.cases[0][1]}) "
-                
-                # Add all the ELIF keywords and their conditions
-                for case in self.cases[1:]:
-                    res += f"({self.elif_token}, {case[0]}) "
+            # Start with the IF keyword and its condition
+            res = f"({self.if_token}, {self.cases[0][0]}) "
+
+            # Add the THEN keyword and its statement
+            res += f"({self.then_token}, {self.cases[0][1]}) "
+
+            # Add all the ELIF keywords and their conditions
+            for case in self.cases[1:]:
+                res += f"({self.elif_token}, {case[0]}) "
         return res
+
+
+class ForNode:
+    def __init__(self, variable_name_token, start_value_node, end_value_node, step_value_node, body_node):
+        self.variable_name_token = variable_name_token
+        self.start_value_node = start_value_node
+        self.end_value_node = end_value_node
+        self.step_value_node = step_value_node
+        self.body_node = body_node
+
+        self.pos_start = self.variable_name_token.pos_start
+        self.pos_end = self.body_node.pos_end
+
+        # TOKEN definition for the representation method
+        self.for_token = Token(TT_KEYWORD, 'FOR')
+        self.to_token = Token(TT_KEYWORD, 'TO')
+        self.then_token = Token(TT_KEYWORD, 'THEN')
+
+    def __repr__(self):
+        return f'{self.for_token} {self.variable_name_token} {TT_EQ} {self.start_value_node} {self.to_token} {self.end_value_node} {self.then_token} {self.step_value_node} {self.body_node}'
+
+
+class WhileNode:
+    def __init__(self, condition_node, body_node):
+        self.condition_node = condition_node
+        self.body_node = body_node
+
+        self.pos_start = self.condition_node.pos_start
+        self.pos_end = self.body_node.pos_end
+
+        # TOKEN implementation for the Representation method
+        self.while_token = Token(TT_KEYWORD, 'WHILE')
+        self.then_token = Token(TT_KEYWORD, 'THEN')
+
+    def __repr__(self):
+        return f'{self.while_token} {self.condition_node} {self.then_token} {self.body_node}'
 
 ######################################################################
 # PARSER
@@ -527,6 +563,18 @@ class Parser:
             if res.error:
                 return res
             return res.success(if_expression)
+
+        elif token.matches(TT_KEYWORD, 'FOR'):
+            for_expression = res.register(self.for_expression())
+            if res.error:
+                return res
+            return res.success(for_expression)
+
+        elif token.matches(TT_KEYWORD, 'WHILE'):
+            while_expression = res.register(self.while_expression())
+            if res.error:
+                return res
+            return res.success(while_expression)
 
         return res.failure(InvalidSyntaxError(
             token.pos_start, token.pos_end,
@@ -606,6 +654,111 @@ class Parser:
             ))
 
         return res.success(IfNode(cases, else_case))
+
+    def for_expression(self):
+        res = ParseResult()
+
+        if not self.current_token.matches(TT_KEYWORD, 'FOR'):
+            return res.failure(InvalidSyntaxError(
+                self.current_token.pos_start, self.current_token.pos_end,
+                f"Expected 'FOR'"
+            ))
+
+        res.register_advancement()
+        self.advance()
+
+        if self.current_token.type != TT_IDENTIFIER:
+            return res.failure(InvalidSyntaxError(
+                self.current_token.pos_start, self.current_token.pos_end,
+                f"Expected an identifier"
+            ))
+
+        var_name = self.current_token
+        res.register_advancement()
+        self.advance()
+
+        if self.current_token.type != TT_EQ:
+            return res.failure(InvalidSyntaxError(
+                self.current_token.pos_start, self.current_token.pos_end,
+                f"Expected '='"
+            ))
+
+        res.register_advancement()
+        self.advance()
+
+        start_value = res.register(self.expression())
+        if res.error:
+            return res
+
+        if not self.current_token.matches(TT_KEYWORD, 'TO'):
+            return res.failure(InvalidSyntaxError(
+                self.current_token.pos_start, self.current_token.pos_end,
+                f"Expected 'TO'"
+            ))
+
+        res.register_advancement()
+        self.advance()
+
+        end_value = res.register(self.expression())
+        if res.error:
+            return res
+
+        if self.current_token.matches(TT_KEYWORD, 'STEP'):
+            res.register_advancement()
+            self.advance()
+
+            step_value = res.register(self.expression())
+            if res.error:
+                return res
+
+        else:
+            step_value = None
+
+        if not self.current_token.matches(TT_KEYWORD, 'THEN'):
+            return res.failure(InvalidSyntaxError(
+                self.current_token.pos_start, self.current_token.pos_end,
+                f"Expected 'THEN'"
+            ))
+
+        res.register_advancement()
+        self.advance()
+
+        body = res.register(self.expression())
+        if res.error:
+            return res
+
+        return res.success(ForNode(var_name, start_value, end_value, step_value, body))
+
+    def while_expression(self):
+        res = ParseResult()
+
+        if not self.current_token.matches(TT_KEYWORD, 'WHILE'):
+            return res.failure(InvalidSyntaxError(
+                self.current_token.pos_start, self.current_token.pos_end,
+                f"Expected 'WHILE'"
+            ))
+
+        res.register_advancement()
+        self.advance()
+
+        condition = res.register(self.expression())
+        if res.error:
+            return res
+
+        if not self.current_token.matches(TT_KEYWORD, 'THEN'):
+            return res.failure(InvalidSyntaxError(
+                self.current_token.pos_start, self.current_token.pos_end,
+                f"Expected 'THEN'"
+            ))
+
+        res.register_advancement()
+        self.advance()
+
+        body = res.register(self.expression())
+        if res.error:
+            return res
+
+        return res.success(WhileNode(condition, body))
 
     def power(self):
         return self.binary_operation(self.atom, (TT_POW, ), self.factor)
@@ -713,6 +866,7 @@ class Parser:
             self.arithmetic_expression,  (TT_EE, TT_NE, TT_LT, TT_GT, TT_LTE, TT_GTE)))
         if res.error:
             return res.failure(InvalidSyntaxError(
+                self.current_token.pos_start, self.current_token.pos_end,
                 "Expected an integer, a float, an identifier, or '+', '-', '('  or 'NOT'"
             ))
 

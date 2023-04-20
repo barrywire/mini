@@ -20,7 +20,7 @@ OR
 NOT
 IF 
 THEN 
-ELIF x
+ELIF
 ELSE 
 FOR 
 TO 
@@ -60,7 +60,7 @@ EOF
         <term> ::= <factor> "*"|"/" <factor> 
         <factor> ::= "+"| "-" <number> | <power>
         <power> ::= <atom> ("^" <factor>) 
-        <atom> ::= <number> | "(" <expression> ")" | <if_then>
+        <atom> ::= <number> | "(" <expression> ")" | <if_then> | <while_then> | <for_to> 
         <number> ::= <digit> | <float>
 
     # Comparison expression
@@ -79,5 +79,7 @@ EOF
         <if_then> ::= IF <expression> THEN <statement> | <else_if> | <else>
         <else_if> ::= ELIF <expression> THEN <statement> | <else_if> | <else>
         <else> ::= ELSE <statement>
+    # For ... To
+        <for_to> ::= FOR <identifier> EQ <expression> TO <expression> [ STEP <expression> THEN <statement>] | THEN <statement>
 
 
