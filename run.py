@@ -1,16 +1,16 @@
-import basic
+import mini
 import time
 
+file_name = 'ex.mini'
 
 def runParser():
-    file_name = 'ex.mini'
     text = ""
     with open(file_name, 'r') as file:
         text = file.read()
 
     if text.strip() == "":
         return
-    result, error = basic.run(file_name, text)
+    result, error = mini.run(file_name, text)
 
     if error:
         print(error.as_string())
@@ -24,4 +24,4 @@ runParser()
 # Calculate Run Time
 finish_time = time.time()
 total_run_time = finish_time - start_time
-print("\nMini runs in:", total_run_time, "seconds")
+print("\n", file_name, "runs in:", total_run_time, "seconds")

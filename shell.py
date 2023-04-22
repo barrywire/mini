@@ -1,8 +1,8 @@
-import basic
+import mini
 
 while True:
     text = input('Mini > ')
-    result, error = basic.run('<stdin>', text)
+    result, error = mini.run('<stdin>', text)
 
     if error:
         print(error.as_string())

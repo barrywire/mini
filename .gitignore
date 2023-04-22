@@ -2,3 +2,6 @@
 __pycache__/
 
 .wrongbasic.py
+
+/mini
+/.vscode/ 

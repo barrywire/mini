@@ -8,17 +8,3 @@ FUN add(a, b)
 END
 
 VAR sum = add(x, y)
-
-IF sum > 15 THEN
-  WHILE x < 10 THEN
-    x = x + 1
-  END
-ELIF sum > 10 THEN
-  FOR i = 1 TO 5
-    VAR product = i * x
-    CONTINUE IF product < 10
-    BREAK IF product > 20
-  END
-ELSE
-  y = y * 2
-END
