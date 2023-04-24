@@ -491,9 +491,9 @@ class IfNode:
             res += f", {self.then_token}, {self.cases[0][1]}"
 
             # Add all the ELIF keywords, their conditions, and their statements
-            for case in self.cases[1]:
-                res += f"{self.elif_token}, {case[0]}"
-                res += f"{self.then_token}, {case[1]}"
+            for case in self.cases[1:]:
+                res += f", {self.elif_token}, {case[0]}"
+                res += f", {self.then_token}, {case[1]}"
 
                 # Add the ELSE keyword and its statement
                 res += f"{self.else_token}, {self.else_case}"
@@ -502,12 +502,12 @@ class IfNode:
             res = f"{self.if_token}, {self.cases[0][0]}"
 
             # Add the THEN keyword and its statement
-            res += f"{self.then_token}, {case[0][1]}"
+            res += f", {self.then_token}, {self.cases[0][1]}"
 
             # Add all the ELIF keywords and their conditions
             for case in self.cases[1:]:
-                res += f"{self.elif_token}, {case[0]}"
-                res += f"{self.then_token}, {case[1]}"
+                res += f", {self.elif_token}, {case[0]}"
+                res += f", {self.then_token}, {case[1]}"
         return res
 
 
