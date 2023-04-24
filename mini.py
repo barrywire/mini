@@ -952,10 +952,10 @@ class Parser:
             return res.success(list_expr)
 
         elif tok.matches(TT_KEYWORD, 'IF'):
-            if_expr = res.register(self.if_expr())
+            if_then = res.register(self.if_then())
             if res.error:
                 return res
-            return res.success(if_expr)
+            return res.success(if_then)
 
         elif tok.matches(TT_KEYWORD, 'FOR'):
             for_expr = res.register(self.for_expr())
@@ -1028,7 +1028,7 @@ class Parser:
             self.current_tok.pos_end.copy()
         ))
 
-    def if_expr(self):
+    def if_then(self):
         res = ParseResult()
         all_cases = res.register(self.if_expr_cases('IF'))
         if res.error:
@@ -1036,10 +1036,10 @@ class Parser:
         cases, else_case = all_cases
         return res.success(IfNode(cases, else_case))
 
-    def if_expr_b(self):
+    def else_if(self):
         return self.if_expr_cases('ELIF')
 
-    def if_expr_c(self):
+    def else_block(self):
         res = ParseResult()
         else_case = None
 
@@ -1072,17 +1072,17 @@ class Parser:
 
         return res.success(else_case)
 
-    def if_expr_b_or_c(self):
+    def elsif_or_else_block(self):
         res = ParseResult()
         cases, else_case = [], None
 
         if self.current_tok.matches(TT_KEYWORD, 'ELIF'):
-            all_cases = res.register(self.if_expr_b())
+            all_cases = res.register(self.else_if())
             if res.error:
                 return res
             cases, else_case = all_cases
         else:
-            else_case = res.register(self.if_expr_c())
+            else_case = res.register(self.else_block())
             if res.error:
                 return res
 
@@ -1128,7 +1128,7 @@ class Parser:
                 res.register_advancement()
                 self.advance()
             else:
-                all_cases = res.register(self.if_expr_b_or_c())
+                all_cases = res.register(self.elsif_or_else_block())
                 if res.error:
                     return res
                 new_cases, else_case = all_cases
@@ -1139,7 +1139,7 @@ class Parser:
                 return res
             cases.append((condition, expr, False))
 
-            all_cases = res.register(self.if_expr_b_or_c())
+            all_cases = res.register(self.elsif_or_else_block())
             if res.error:
                 return res
             new_cases, else_case = all_cases
