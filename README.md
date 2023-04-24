@@ -13,7 +13,7 @@ The code for the lexer is found in its entirety in the basic.py file, specifical
 
 ## Mini Language - Parser
 
-Developed by [David Kilolo](https://github.com/dgkilolo), [Laurent Namasaka] (https://github.com/laurentnamasaka), [Samson Rasugu] (https://github.com/samrasugu) and [Barnabas Wire](https://github.com/barrywire).
+Developed by [David Kilolo](https://github.com/dgkilolo), [Laurent Namasaka](https://github.com/laurentnamasaka), [Samson Rasugu](https://github.com/samrasugu) and [Barnabas Wire](https://github.com/barrywire).
 
 ## Mini Language - Interpreter
 
