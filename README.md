@@ -13,7 +13,7 @@ The code for the lexer is found in its entirety in the basic.py file, specifical
 
 ## Mini Language - Parser
 
-Coming soon...
+Developed by [David Kilolo](https://github.com/dgkilolo), [Laurent Namasaka] (https://github.com/laurentnamasaka), [Samson Rasugu] (https://github.com/samrasugu) and [Barnabas Wire](https://github.com/barrywire).
 
 ## Mini Language - Interpreter
 
@@ -25,7 +25,7 @@ Coming soon...
 2. Run the shell.py file. It is the entry point of the compiler.
 
 ```bash
-python3 shell.py
+python3 run.py
 ```
 
 3. Enter the code to be interpreted in the terminal
