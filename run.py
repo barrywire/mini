@@ -3,7 +3,8 @@ import time
 
 file_name = 'ex.mini'
 
-def runParser():
+
+def run_parser():
     text = ""
     with open(file_name, 'r') as file:
         text = file.read()
@@ -18,10 +19,11 @@ def runParser():
         print(result)
 
 
+# Calculate Run Time
 start_time = time.time()
+
 runParser()
 
-# Calculate Run Time
 finish_time = time.time()
 total_run_time = finish_time - start_time
 print("\n", file_name, "runs in:", total_run_time, "seconds")

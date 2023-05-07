@@ -511,7 +511,7 @@ class IfNode:
                 res += f", {self.then_token}, {case[1]}"
             
             # Add the ELSE keyword and its statement
-            res += f"{self.else_token}, {self.else_case}"
+            # res += f"{self.else_token}, {self.else_case}"
         return res
 
 
