@@ -393,6 +393,9 @@ class NumberNode:
     def __repr__(self):
         return f'{self.tok}'
 
+    def get_ic(self, get_next_temp_var, get_current_temp):
+        return f't{get_next_temp_var()} = {self.tok.value}\n'
+
 
 class StringNode:
     def __init__(self, tok):
@@ -404,6 +407,9 @@ class StringNode:
     def __repr__(self):
         return f'{self.tok}'
 
+    def get_ic(self, get_next_temp_var, get_current_temp):
+        return f't{get_next_temp_var()} = "{self.tok.value}"\n'
+
 
 class ListNode:
     def __init__(self, element_nodes, pos_start, pos_end):
@@ -412,8 +418,29 @@ class ListNode:
         self.pos_start = pos_start
         self.pos_end = pos_end
 
+    # def to_string(self, nodes_list):
+    #     size = len(nodes_list)
+    #     string = ''
+
+    #     if size < 1:
+    #         return string
+    #     elif size == 1:
+    #         return f'{nodes_list[0]}'
+    #     else:
+    #         node = nodes_list[0]
+    #         nodes_list.pop(0)
+    #         return f'{node}, {self.to_string(nodes_list)}'
+
     def __repr__(self):
         return f'{self.element_nodes}'
+        # return self.to_string(self.element_nodes.copy())
+
+    def get_ic(self, get_next_temp_var, get_current_temp):
+        code_statements = ''
+
+        for node in self.element_nodes:
+            code_statements += node.get_ic(get_next_temp_var, get_current_temp)
+        return code_statements
 
 
 class VarAccessNode:
@@ -425,6 +452,9 @@ class VarAccessNode:
 
     def __repr__(self):
         return f'{self.var_name_tok}'
+
+    def get_ic(self, get_next_temp_var, get_current_temp):
+        return f't{get_next_temp_var()} = {self.var_name_tok.value}\n'
 
 
 class VarAssignNode:
@@ -441,6 +471,9 @@ class VarAssignNode:
     def __repr__(self):
         return f'{self.var_token} {self.var_name_tok} {TT_EQ} {self.value_node}'
 
+    def get_ic(self, get_next_temp_var, get_current_temp):
+        return f'{self.value_node.get_ic(get_next_temp_var, get_current_temp)}{self.var_name_tok.value} = t{get_current_temp()}\n'
+
 
 class BinOpNode:
     def __init__(self, left_node, op_tok, right_node):
@@ -454,6 +487,41 @@ class BinOpNode:
     def __repr__(self):
         return f'({self.left_node}, {self.op_tok}, {self.right_node})'
 
+    def get_ic(self, get_next_temp_var, get_current_temp):
+        left_code = self.left_node.get_ic(get_next_temp_var, get_current_temp)
+        temp_left_code = get_current_temp()
+
+        right_code = self.right_node.get_ic(
+            get_next_temp_var, get_current_temp)
+        temp_right_code = get_current_temp()
+
+        op = self.op_symbol_converter()
+        return f'{left_code}{right_code}t{get_next_temp_var()} = t{temp_left_code} {op} t{temp_right_code}\n'
+
+    def op_symbol_converter(self):
+        if self.op_tok.type == TT_PLUS:
+            return '+'
+        elif self.op_tok.type == TT_MINUS:
+            return '-'
+        elif self.op_tok.type == TT_DIV:
+            return '/'
+        elif self.op_tok.type == TT_MUL:
+            return '*'
+        elif self.op_tok.type == TT_POW:
+            return '^'
+        elif self.op_tok.type == TT_EE:
+            return '=='
+        elif self.op_tok.type == TT_NE:
+            return '!='
+        elif self.op_tok.type == TT_LT:
+            return '<'
+        elif self.op_tok.type == TT_GT:
+            return '<'
+        elif self.op_tok.type == TT_LTE:
+            return '<='
+        else:
+            return '>='
+
 
 class UnaryOpNode:
     def __init__(self, op_tok, node):
@@ -465,6 +533,15 @@ class UnaryOpNode:
 
     def __repr__(self):
         return f'({self.op_tok}, {self.node})'
+
+    def get_ic(self, get_next_temp_var, get_current_temp):
+        node_code = self.node.get_ic(get_next_temp_var, get_current_temp)
+        temp_node_code = get_current_temp()
+
+        if self.op_tok.type == TT_MINUS:
+            return f'{node_code}t{get_next_temp_var()} = -t{temp_node_code}\n'
+        else:
+            return f'{node_code}t{get_next_temp_var()} = +t{temp_node_code}\n'
 
 
 class IfNode:
@@ -514,6 +591,32 @@ class IfNode:
             # res += f"{self.else_token}, {self.else_case}"
         return res
 
+    # def get_ic(self, get_next_temp_var, get_current_temp):
+    #     code = ''
+    #     else_label = get_next_temp_var()
+    #     end_label = get_next_temp_var()
+
+    #     for condition, expr in self.cases:
+    #         condition_code = condition.get_ic(
+    #             get_next_temp_var, get_current_temp)
+    #         temp_condition_code = get_current_temp()
+
+    #         expr_code = expr.get_ic(get_next_temp_var, get_current_temp)
+    #         temp_expr_code = get_current_temp()
+
+    #         code += f'{condition_code}if t{temp_condition_code} == 0 goto {else_label}\n'
+    #         code += f'{expr_code}goto {end_label}\n'
+    #         code += f'{else_label}:\n'
+
+    #     if self.else_case:
+    #         else_case_code = self.else_case.get_ic(
+    #             get_next_temp_var, get_current_temp)
+    #         temp_else_case_code = get_current_temp()
+    #         code += f'{else_case_code}goto {end_label}\n'
+
+    #     code += f'{end_label}:\n'
+    #     return code
+
 
 class ForNode:
     def __init__(self, var_name_tok, start_value_node, end_value_node, step_value_node, body_node, should_return_null):
@@ -537,6 +640,47 @@ class ForNode:
         res = f"{self.for_token}, {self.var_name_tok}, {self.to_token}, {self.end_value_node}, {self.step_token}, {self.step_value_node}, {self.then_token}, {self.body_node}"
         return res
 
+    # def get_ic(self, get_next_temp_var, get_current_temp):
+    #     code = ''
+
+    #     start_value_code = self.start_value_node.get_ic(
+    #         get_next_temp_var, get_current_temp)
+    #     temp_start_value_code = get_current_temp()
+
+    #     end_value_code = self.end_value_node.get_ic(
+    #         get_next_temp_var, get_current_temp)
+    #     temp_end_value_code = get_current_temp()
+
+    #     step_value_code = self.step_value_node.get_ic(
+    #         get_next_temp_var, get_current_temp)
+    #     temp_step_value_code = get_current_temp()
+
+    #     var_name = self.var_name_tok.value
+
+    #     code += f'{start_value_code}t{get_next_temp_var()} = t{temp_start_value_code}\n'
+    #     code += f'{var_name} = t{get_current_temp()}\n'
+
+    #     loop_start_label = get_next_temp_var()
+    #     loop_end_label = get_next_temp_var()
+
+    #     code += f'{loop_start_label}:\n'
+
+    #     code += f'{end_value_code}t{get_next_temp_var()} = t{temp_end_value_code}\n'
+    #     code += f'if t{get_current_temp()} == 0 goto {loop_end_label}\n'
+
+    #     body_code = self.body_node.get_ic(get_next_temp_var, get_current_temp)
+    #     temp_body_code = get_current_temp()
+
+    #     code += f'{body_code}t{get_next_temp_var()} = t{temp_body_code}\n'
+
+    #     code += f'{step_value_code}t{get_next_temp_var()} = t{temp_step_value_code}\n'
+    #     code += f'{var_name} = t{get_current_temp()}\n'
+
+    #     code += f'goto {loop_start_label}\n'
+    #     code += f'{loop_end_label}:\n'
+
+    #     return code
+
 
 class WhileNode:
     def __init__(self, condition_node, body_node, should_return_null):
@@ -554,6 +698,41 @@ class WhileNode:
     def __repr__(self):
         res = f"{self.while_token}, {self.condition_node}, {self.then_token}, {self.body_node}"
         return res
+
+    # def get_ic(self, get_next_temp_var, get_current_temp):
+    #     temp_condition = get_current_temp()
+    #     condition_code = self.condition_node.get_ic(
+    #         get_next_temp_var, get_current_temp)
+    #     label = get_next_temp_var()
+    #     body_code = self.body_node.get_ic(get_next_temp_var, get_current_temp)
+    #     # jump_back_code = f'goto {temp_condition}\n'
+    #     # end_code = f'goto {get_current_temp()}\n'
+    #     return f'{condition_code} if !t{temp_condition} goto L{label}\n{body_code}:\n'
+
+    def get_ic(self, get_next_temp_var, get_current_temp):
+        code = ''
+
+        condition_code = self.condition_node.get_ic(
+            get_next_temp_var, get_current_temp)
+        temp_condition_code = get_current_temp()
+
+        loop_start_label = get_next_temp_var()
+        loop_end_label = get_next_temp_var()
+
+        code += f'{loop_start_label}:\n'
+
+        code += f'{condition_code}t{get_next_temp_var()} = t{temp_condition_code}\n'
+        code += f'if t{get_current_temp()} == 0 goto {loop_end_label}\n'
+
+        body_code = self.body_node.get_ic(get_next_temp_var, get_current_temp)
+        temp_body_code = get_current_temp()
+
+        code += f'{body_code}t{get_next_temp_var()} = t{temp_body_code}\n'
+
+        code += f'goto {loop_start_label}\n'
+        code += f'{loop_end_label}:\n'
+
+        return code
 
 
 class FuncDefNode:
@@ -578,6 +757,30 @@ class FuncDefNode:
     def __repr__(self):
         return f"{self.fun_token}, {self.var_name_tok}, {self.arg_name_toks}, {self.body_node}"
 
+    def get_ic(self, get_next_temp_var, get_current_temp):
+        code = ''
+        func_name = self.var_name_tok.value if self.var_name_tok else None
+
+        if func_name:
+            code += f'\n\nfunc_start {func_name}\n'
+        else:
+            code += f'\n\nfunc_start\n'
+
+        for arg_name_tok in self.arg_name_toks:
+            code += f'arg {arg_name_tok.value}\n'
+
+        body_code = self.body_node.get_ic(get_next_temp_var, get_current_temp)
+        temp_body_code = get_current_temp()
+
+        code += f'{body_code}t{get_next_temp_var()} = t{temp_body_code}\n'
+
+        if self.should_auto_return:
+            code += f'return t{get_current_temp()}\n'
+
+        code += f'func_end\n\n'
+
+        return code
+
 
 class CallNode:
     def __init__(self, node_to_call, arg_nodes):
@@ -601,6 +804,22 @@ class CallNode:
     def __repr__(self):
         return f"{self.node_to_call}, {self.open_paren_token}, {self.arg_nodes}, {self.close_paren_token}"
 
+    def get_ic(self, get_next_temp_var, get_current_temp):
+        arg_nodes_ic = ''
+        arg_nodes_temps = ''
+
+        for arg_node in self.arg_nodes:
+            arg_nodes_ic += arg_node.get_ic(get_next_temp_var,
+                                            get_current_temp)
+            arg_nodes_temp = get_current_temp()
+
+            if arg_nodes_temps == '':
+                arg_nodes_temps += f't{arg_nodes_temp}'
+            else:
+                arg_nodes_temps += f', t{arg_nodes_temp}'
+
+        return f'{arg_nodes_ic} CALL {self.node_to_call.var_name_tok.value} {arg_nodes_temps}\n'
+
 
 class ReturnNode:
     def __init__(self, node_to_return, pos_start, pos_end):
@@ -615,6 +834,9 @@ class ReturnNode:
     def __repr__(self):
         return f"{self.return_token}, {self.node_to_return}"
 
+    def get_ic(self, get_next_temp_var, get_current_temp):
+        return f'{self.node_to_return.get_ic(get_next_temp_var, get_current_temp)} RETURN t{get_current_temp()}\n\n'
+
 
 class ContinueNode:
     def __init__(self, pos_start, pos_end):
@@ -627,6 +849,9 @@ class ContinueNode:
     def __repr__(self):
         return f"{self.continue_token}"
 
+    def get_ic(self, get_next_temp_var, get_current_temp):
+        return f'goto {get_current_temp()}\n\n'
+
 
 class BreakNode:
     def __init__(self, pos_start, pos_end):
@@ -638,6 +863,9 @@ class BreakNode:
 
     def __repr__(self):
         return f"{self.break_token}"
+
+    def get_ic(self, get_next_temp_var, get_current_temp):
+        return f'goto {get_current_temp()}\n\n'
 
 # ===============================================================================
 # PARSE RESULT
@@ -1426,378 +1654,27 @@ class Parser:
 
         return res.success(left)
 
-# ===============================================================================
-# RUNTIME RESULT
-# ===============================================================================
-
-
-class RTResult:
-    def __init__(self):
-        self.reset()
-
-    def reset(self):
-        self.value = None
-        self.error = None
-        self.func_return_value = None
-        self.loop_should_continue = False
-        self.loop_should_break = False
-
-    def register(self, res):
-        self.error = res.error
-        self.func_return_value = res.func_return_value
-        self.loop_should_continue = res.loop_should_continue
-        self.loop_should_break = res.loop_should_break
-        return res.value
-
-    def success(self, value):
-        self.reset()
-        self.value = value
-        return self
-
-    def success_return(self, value):
-        self.reset()
-        self.func_return_value = value
-        return self
-
-    def success_continue(self):
-        self.reset()
-        self.loop_should_continue = True
-        return self
-
-    def success_break(self):
-        self.reset()
-        self.loop_should_break = True
-        return self
-
-    def failure(self, error):
-        self.reset()
-        self.error = error
-        return self
-
-    def should_return(self):
-        # Note: this will allow you to continue and break outside the current function
-        return (
-            self.error or
-            self.func_return_value or
-            self.loop_should_continue or
-            self.loop_should_break
-        )
-
 
 # ===============================================================================
-# CONTEXT
+# INTERMEDIATE CODE GENERATOR
 # ===============================================================================
+class IntermediateCodeGenerator:
+    def __init__(self, ast):
+        self.temp_counter = 0
+        self.ast = ast
+
+    def get_next_temp_var(self):
+        self.temp_counter += 1
+        return self.temp_counter - 1
+
+    def get_current_temp(self):
+        return self.temp_counter - 1
+
+    def generate_intermediate_code(self):
+        if self.ast == None:
+            return ''
+        return self.ast.get_ic(self.get_next_temp_var, self.get_current_temp)
 
-
-class Context:
-    def __init__(self, display_name, parent=None, parent_entry_pos=None):
-        self.display_name = display_name
-        self.parent = parent
-        self.parent_entry_pos = parent_entry_pos
-        self.symbol_table = None
-
-# ===============================================================================
-# SYMBOL TABLE
-# ===============================================================================
-
-
-class SymbolTable:
-    def __init__(self, parent=None):
-        self.symbols = {}
-        self.parent = parent
-
-    def get(self, name):
-        value = self.symbols.get(name, None)
-        if value == None and self.parent:
-            return self.parent.get(name)
-        return value
-
-    def set(self, name, value):
-        self.symbols[name] = value
-
-    def remove(self, name):
-        del self.symbols[name]
-
-# ===============================================================================
-# INTERPRETER
-# ===============================================================================
-
-
-class Interpreter:
-    def visit(self, node, context):
-        method_name = f'visit_{type(node).__name__}'
-        method = getattr(self, method_name, self.no_visit_method)
-        return method(node, context)
-
-    def no_visit_method(self, node, context):
-        raise Exception(f'No visit_{type(node).__name__} method defined')
-
-    ###################################
-
-    def visit_NumberNode(self, node, context):
-        return RTResult().success(
-            Number(node.tok.value).set_context(
-                context).set_pos(node.pos_start, node.pos_end)
-        )
-
-    def visit_StringNode(self, node, context):
-        return RTResult().success(
-            String(node.tok.value).set_context(
-                context).set_pos(node.pos_start, node.pos_end)
-        )
-
-    def visit_ListNode(self, node, context):
-        res = RTResult()
-        elements = []
-
-        for element_node in node.element_nodes:
-            elements.append(res.register(self.visit(element_node, context)))
-            if res.should_return():
-                return res
-
-        return res.success(
-            List(elements).set_context(context).set_pos(
-                node.pos_start, node.pos_end)
-        )
-
-    def visit_VarAccessNode(self, node, context):
-        res = RTResult()
-        var_name = node.var_name_tok.value
-        value = context.symbol_table.get(var_name)
-
-        if not value:
-            return res.failure(RTError(
-                node.pos_start, node.pos_end,
-                f"'{var_name}' is not defined",
-                context
-            ))
-
-        value = value.copy().set_pos(node.pos_start, node.pos_end).set_context(context)
-        return res.success(value)
-
-    def visit_VarAssignNode(self, node, context):
-        res = RTResult()
-        var_name = node.var_name_tok.value
-        value = res.register(self.visit(node.value_node, context))
-        if res.should_return():
-            return res
-
-        context.symbol_table.set(var_name, value)
-        return res.success(value)
-
-    def visit_BinOpNode(self, node, context):
-        res = RTResult()
-        left = res.register(self.visit(node.left_node, context))
-        if res.should_return():
-            return res
-        right = res.register(self.visit(node.right_node, context))
-        if res.should_return():
-            return res
-
-        if node.op_tok.type == TT_PLUS:
-            result, error = left.added_to(right)
-        elif node.op_tok.type == TT_MINUS:
-            result, error = left.subbed_by(right)
-        elif node.op_tok.type == TT_MUL:
-            result, error = left.multed_by(right)
-        elif node.op_tok.type == TT_DIV:
-            result, error = left.dived_by(right)
-        elif node.op_tok.type == TT_POW:
-            result, error = left.powed_by(right)
-        elif node.op_tok.type == TT_EE:
-            result, error = left.get_comparison_eq(right)
-        elif node.op_tok.type == TT_NE:
-            result, error = left.get_comparison_ne(right)
-        elif node.op_tok.type == TT_LT:
-            result, error = left.get_comparison_lt(right)
-        elif node.op_tok.type == TT_GT:
-            result, error = left.get_comparison_gt(right)
-        elif node.op_tok.type == TT_LTE:
-            result, error = left.get_comparison_lte(right)
-        elif node.op_tok.type == TT_GTE:
-            result, error = left.get_comparison_gte(right)
-        elif node.op_tok.matches(TT_KEYWORD, 'AND'):
-            result, error = left.anded_by(right)
-        elif node.op_tok.matches(TT_KEYWORD, 'OR'):
-            result, error = left.ored_by(right)
-
-        if error:
-            return res.failure(error)
-        else:
-            return res.success(result.set_pos(node.pos_start, node.pos_end))
-
-    def visit_UnaryOpNode(self, node, context):
-        res = RTResult()
-        number = res.register(self.visit(node.node, context))
-        if res.should_return():
-            return res
-
-        error = None
-
-        if node.op_tok.type == TT_MINUS:
-            number, error = number.multed_by(Number(-1))
-        elif node.op_tok.matches(TT_KEYWORD, 'NOT'):
-            number, error = number.notted()
-
-        if error:
-            return res.failure(error)
-        else:
-            return res.success(number.set_pos(node.pos_start, node.pos_end))
-
-    def visit_IfNode(self, node, context):
-        res = RTResult()
-
-        for condition, expr, should_return_null in node.cases:
-            condition_value = res.register(self.visit(condition, context))
-            if res.should_return():
-                return res
-
-            if condition_value.is_true():
-                expr_value = res.register(self.visit(expr, context))
-                if res.should_return():
-                    return res
-                return res.success(Number.null if should_return_null else expr_value)
-
-        if node.else_case:
-            expr, should_return_null = node.else_case
-            expr_value = res.register(self.visit(expr, context))
-            if res.should_return():
-                return res
-            return res.success(Number.null if should_return_null else expr_value)
-
-        return res.success(Number.null)
-
-    def visit_ForNode(self, node, context):
-        res = RTResult()
-        elements = []
-
-        start_value = res.register(self.visit(node.start_value_node, context))
-        if res.should_return():
-            return res
-
-        end_value = res.register(self.visit(node.end_value_node, context))
-        if res.should_return():
-            return res
-
-        if node.step_value_node:
-            step_value = res.register(
-                self.visit(node.step_value_node, context))
-            if res.should_return():
-                return res
-        else:
-            step_value = Number(1)
-
-        i = start_value.value
-
-        if step_value.value >= 0:
-            def condition(): return i < end_value.value
-        else:
-            def condition(): return i > end_value.value
-
-        while condition():
-            context.symbol_table.set(node.var_name_tok.value, Number(i))
-            i += step_value.value
-
-            value = res.register(self.visit(node.body_node, context))
-            if res.should_return() and res.loop_should_continue == False and res.loop_should_break == False:
-                return res
-
-            if res.loop_should_continue:
-                continue
-
-            if res.loop_should_break:
-                break
-
-            elements.append(value)
-
-        return res.success(
-            Number.null if node.should_return_null else
-            List(elements).set_context(context).set_pos(
-                node.pos_start, node.pos_end)
-        )
-
-    def visit_WhileNode(self, node, context):
-        res = RTResult()
-        elements = []
-
-        while True:
-            condition = res.register(self.visit(node.condition_node, context))
-            if res.should_return():
-                return res
-
-            if not condition.is_true():
-                break
-
-            value = res.register(self.visit(node.body_node, context))
-            if res.should_return() and res.loop_should_continue == False and res.loop_should_break == False:
-                return res
-
-            if res.loop_should_continue:
-                continue
-
-            if res.loop_should_break:
-                break
-
-            elements.append(value)
-
-        return res.success(
-            Number.null if node.should_return_null else
-            List(elements).set_context(context).set_pos(
-                node.pos_start, node.pos_end)
-        )
-
-    def visit_FuncDefNode(self, node, context):
-        res = RTResult()
-
-        func_name = node.var_name_tok.value if node.var_name_tok else None
-        body_node = node.body_node
-        arg_names = [arg_name.value for arg_name in node.arg_name_toks]
-        func_value = Function(func_name, body_node, arg_names, node.should_auto_return).set_context(
-            context).set_pos(node.pos_start, node.pos_end)
-
-        if node.var_name_tok:
-            context.symbol_table.set(func_name, func_value)
-
-        return res.success(func_value)
-
-    def visit_CallNode(self, node, context):
-        res = RTResult()
-        args = []
-
-        value_to_call = res.register(self.visit(node.node_to_call, context))
-        if res.should_return():
-            return res
-        value_to_call = value_to_call.copy().set_pos(node.pos_start, node.pos_end)
-
-        for arg_node in node.arg_nodes:
-            args.append(res.register(self.visit(arg_node, context)))
-            if res.should_return():
-                return res
-
-        return_value = res.register(value_to_call.execute(args))
-        if res.should_return():
-            return res
-        return_value = return_value.copy().set_pos(
-            node.pos_start, node.pos_end).set_context(context)
-        return res.success(return_value)
-
-    def visit_ReturnNode(self, node, context):
-        res = RTResult()
-
-        if node.node_to_return:
-            value = res.register(self.visit(node.node_to_return, context))
-            if res.should_return():
-                return res
-        else:
-            value = Number.null
-
-        return res.success_return(value)
-
-    def visit_ContinueNode(self, node, context):
-        return RTResult().success_continue()
-
-    def visit_BreakNode(self, node, context):
-        return RTResult().success_break()
 
 # ===============================================================================
 # RUN
@@ -1823,25 +1700,24 @@ def run_parser(fn, text):
     ast = parser.parse()
     return ast.node, ast.error
 
-# def run(fn, text):
-#     # Generate tokens
-#     lexer = Lexer(fn, text)
-#     tokens, error = lexer.make_tokens()
-#     if error:
-#         return None, error
+
+def run_intermediate_code_generator(fn, text):
+    # Generate tokens
+    lexer = Lexer(fn, text)
+    tokens, error = lexer.make_tokens()
+    if error:
+        return None, error
+
+    # Generate AST
+    parser = Parser(tokens)
+    ast = parser.parse()
+    if ast.error:
+        return None, ast.error
+
+    # Generate Intermediate Code
+    icg = IntermediateCodeGenerator(ast.node)
+
+    return icg.generate_intermediate_code(), ast.error
 
 
-#     # # Generate AST
-#     parser = Parser(tokens)
-#     ast = parser.parse()
-#     if ast.error:
-#         return None, ast.error
-#     return ast.node, ast.error
-
-    # # Run program
-    # interpreter = Interpreter()
-    # context = Context('<program>')
-    # context.symbol_table = global_symbol_table
-    # result = interpreter.visit(ast.node, context)
-
-    # return result.value, result.error
+# TODO: Fix FOR and IF statements in the ICG
