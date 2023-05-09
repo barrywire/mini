@@ -1,1 +1,16 @@
 3 * 3
+VAR x = 8
+VAR y = 9
+VAR z = 0
+
+FUN add(a, b) 
+  VAR result = a + b
+  RETURN result
+END
+
+VAR sum = add(x, y)
+
+FUN get_sum(product)
+    VAR product = x * i
+END
+

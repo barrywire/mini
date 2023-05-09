@@ -1,7 +1,7 @@
 import mini
 import time
 
-file_name = 'ex.mini'
+file_name = 'tac.mini'
 
 
 def run_lexer():

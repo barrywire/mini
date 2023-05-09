@@ -1,30 +1,20 @@
-# ===============================================================================
-# IMPORTS
-# ===============================================================================
-
 from error import *
 from position import *
 from constants import *
 from lexer import *
 from parser import *
-import string
-import os
-import math
 
+"""Mini
+        Description:
+            This is the main file of the Mini programming language.
+            It puts together the lexer, parser, and intermediate code generator.
+            It contains the following:
+                1. IntermediateCodeGenerator class
+                2. run_lexer function
+                3. run_parser function
+                4. run_intermediate_code_generator function
 
-# ===============================================================================
-# ERRORS
-# ===============================================================================
-
-
-
-
-# ===============================================================================
-# NODES
-# ===============================================================================
-
-
-
+"""
 
 
 # ===============================================================================
