@@ -14,7 +14,7 @@
 <float> ::= <digit> . <digit>
 
 
-???# Variables
+# Variables
 <expression> ::= <arithmetic_expression> | <comparison_expression> | <assignment_expression> | <variable_expression> | <logical_expression>
 <variable_expression> ::= VAR <identifier> <assignment_operator> <expression>
 

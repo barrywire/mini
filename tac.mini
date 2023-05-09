@@ -3,6 +3,7 @@ VAR x = 8
 VAR y = 9
 VAR z = 0
 
+
 FUN add(a, b) 
   VAR result = a + b
   RETURN result
@@ -20,5 +21,21 @@ ELIF sum > 10 THEN
   VAR product = 0
 ELSE
   VAR product = 0
+END
+
+WHILE x < 10 THEN
+  VAR x = x + 1
+END
+
+FOR i = 1 TO 5 THEN
+  VAR product = x * i
+  IF product < 10 THEN
+    VAR product = product - 1
+    CONTINUE
+  END
+  IF product > 10 THEN
+    VAR product = product + 1
+    BREAK
+  END
 END
 

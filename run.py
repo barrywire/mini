@@ -1,7 +1,7 @@
 import mini
 import time
 
-file_name = 'tac.mini'
+file_name = 'ex.mini'
 
 
 def run_lexer():
@@ -78,4 +78,4 @@ run_icg()
 icg_finish_time = time.time()
 icg_total_run_time = icg_finish_time - icg_start_time
 print("=====================================================================")
-print("\n", file_name, "Code Generator runs in:", icg_total_run_time, "seconds")
+print("\n", file_name, "Mini Intermediate Code Generator runs in:", icg_total_run_time, "seconds")

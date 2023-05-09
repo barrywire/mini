@@ -36,22 +36,8 @@ class ListNode:
         self.pos_start = pos_start
         self.pos_end = pos_end
 
-    # def to_string(self, nodes_list):
-    #     size = len(nodes_list)
-    #     string = ''
-
-    #     if size < 1:
-    #         return string
-    #     elif size == 1:
-    #         return f'{nodes_list[0]}'
-    #     else:
-    #         node = nodes_list[0]
-    #         nodes_list.pop(0)
-    #         return f'{node}, {self.to_string(nodes_list)}'
-
     def __repr__(self):
         return f'{self.element_nodes}'
-        # return self.to_string(self.element_nodes.copy())
 
     def get_ic(self, get_next_temp_var, get_current_temp):
         code_statements = ''
@@ -134,7 +120,7 @@ class BinOpNode:
         elif self.op_tok.type == TT_LT:
             return '<'
         elif self.op_tok.type == TT_GT:
-            return '<'
+            return '>'
         elif self.op_tok.type == TT_LTE:
             return '<='
         else:
@@ -208,18 +194,21 @@ class IfNode:
             # Add the ELSE keyword and its statement
             # res += f"{self.else_token}, {self.else_case}"
         return res
-    
+
     def get_ic(self, get_next_temp_var, get_current_temp):
         code = ''
-        
-        condition_code = self.cases[0][0].get_ic(get_next_temp_var, get_current_temp)
+
+        condition_code = self.cases[0][0].get_ic(
+            get_next_temp_var, get_current_temp)
         temp_condition_code = get_current_temp()
         label = get_next_temp_var()
-        body_code = self.cases[0][1].get_ic(get_next_temp_var, get_current_temp)
-        
-        code += f'{condition_code} if t!{temp_condition_code} goto L{label} \n{body_code} goto L{label}\n'
-        
+        body_code = self.cases[0][1].get_ic(
+            get_next_temp_var, get_current_temp)
+
+        code += f'{condition_code} if !t{temp_condition_code} goto L{label} \n{body_code} L{label}:\n'
+
         return code
+
 
 class ForNode:
     def __init__(self, var_name_tok, start_value_node, end_value_node, step_value_node, body_node, should_return_null):
@@ -242,6 +231,52 @@ class ForNode:
     def __repr__(self):
         res = f"{self.for_token}, {self.var_name_tok}, {self.to_token}, {self.end_value_node}, {self.step_token}, {self.step_value_node}, {self.then_token}, {self.body_node}"
         return res
+
+    def get_ic(self, get_next_temp_var, get_current_temp):
+        code = ''
+
+        variable_name_token_name = self.var_name_tok.value
+
+        start_value_code = self.start_value_node.get_ic(
+            get_next_temp_var, get_current_temp)
+        temp_start_value_code = get_current_temp()
+
+        end_value_code = self.end_value_node.get_ic(
+            get_next_temp_var, get_current_temp)
+        temp_end_value_code = get_current_temp()
+
+        if self.step_value_node:
+            step_value_code = self.step_value_node.get_ic(
+                get_next_temp_var, get_current_temp)
+            temp_step_value_code = get_current_temp()
+
+        loop_start_label = get_next_temp_var()
+        loop_end_label = get_next_temp_var()
+
+        code += f'\n {loop_start_label}: \n'
+
+        code += f'{start_value_code}\n'
+        code += f'{start_value_code} t{temp_start_value_code} = {variable_name_token_name} \n'
+        code += f'{end_value_code}\n'
+        if self.step_value_node:
+            code += f'{step_value_code} t{temp_step_value_code} = {variable_name_token_name} \n'
+
+        code += f'if t{temp_start_value_code} > t{temp_end_value_code} goto L{loop_end_label} \n'
+
+        body_code = self.body_node.get_ic(
+            get_next_temp_var, get_current_temp)
+        code += body_code
+
+        if self.step_value_node:
+            code += f'{variable_name_token_name} = {variable_name_token_name} + t{temp_step_value_code} \n'
+        else:
+            code += f'{variable_name_token_name} = {variable_name_token_name} + 1 \n'
+
+        code += f'goto L{loop_start_label} \n'
+
+        code += f'\n {loop_end_label}: \n'
+
+        return code
 
 
 class WhileNode:
@@ -271,10 +306,10 @@ class WhileNode:
         loop_start_label = get_next_temp_var()
         loop_end_label = get_next_temp_var()
 
-        code += f'{loop_start_label}:\n'
+        code += f'\n{loop_start_label}:\n'
 
         code += f'{condition_code}t{get_next_temp_var()} = t{temp_condition_code}\n'
-        code += f'if t{get_current_temp()} == 0 goto {loop_end_label}\n'
+        code += f'if !t{get_current_temp()} goto {loop_end_label}\n'
 
         body_code = self.body_node.get_ic(get_next_temp_var, get_current_temp)
         temp_body_code = get_current_temp()
@@ -282,7 +317,7 @@ class WhileNode:
         code += f'{body_code}t{get_next_temp_var()} = t{temp_body_code}\n'
 
         code += f'goto {loop_start_label}\n'
-        code += f'{loop_end_label}:\n'
+        code += f'{loop_end_label}:\n\n'
 
         return code
 
@@ -324,12 +359,13 @@ class FuncDefNode:
         body_code = self.body_node.get_ic(get_next_temp_var, get_current_temp)
         temp_body_code = get_current_temp()
 
-        code += f'{body_code}t{get_next_temp_var()} = t{temp_body_code}\n'
+        # code += f'{body_code} t{get_next_temp_var()} = t{temp_body_code}\n'
+        code += f'{body_code}\n'
 
         if self.should_auto_return:
-            code += f'return t{get_current_temp()}\n'
+            code += f'RETURN t{get_current_temp()}\n'
 
-        code += f'func_end\n\n'
+        code += f'func_end\n\n\n'
 
         return code
 
@@ -387,7 +423,7 @@ class ReturnNode:
         return f"{self.return_token}, {self.node_to_return}"
 
     def get_ic(self, get_next_temp_var, get_current_temp):
-        return f'{self.node_to_return.get_ic(get_next_temp_var, get_current_temp)} RETURN t{get_current_temp()}\n\n'
+        return f'{self.node_to_return.get_ic(get_next_temp_var, get_current_temp)} RETURN t{get_current_temp()}\n'
 
 
 class ContinueNode:

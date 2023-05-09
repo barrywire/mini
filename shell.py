@@ -2,7 +2,7 @@ import mini
 
 while True:
     text = input('Mini > ')
-    result, error = mini.run('<stdin>', text)
+    result, error = mini.run_intermediate_code_generator('<stdin>', text)
 
     if error:
         print(error.as_string())
