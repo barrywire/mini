@@ -15,9 +15,10 @@ The code for the lexer is found in its entirety in the basic.py file, specifical
 
 Developed by [David Kilolo](https://github.com/dgkilolo), [Laurent Namasaka](https://github.com/laurentnamasaka), [Samson Rasugu](https://github.com/samrasugu) and [Barnabas Wire](https://github.com/barrywire).
 
-## Mini Language - Interpreter
+## Mini Language - Intermediate Code Generator
 
-Coming soon...
+Developed by [David Kilolo](https://github.com/dgkilolo), [Laurent Namasaka](https://github.com/laurentnamasaka), [Samson Rasugu](https://github.com/samrasugu) and [Barnabas Wire](https://github.com/barrywire).
+
 
 ## Running the code
 
