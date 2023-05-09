@@ -438,7 +438,10 @@ class ContinueNode:
         return f"{self.continue_token}"
 
     def get_ic(self, get_next_temp_var, get_current_temp):
-        return f'goto {get_current_temp()}\n\n'
+        code = ''
+        code += f'goto {get_next_temp_var()}\n\n'
+        code += f'{get_current_temp()}:\n'
+        return code
 
 
 class BreakNode:
@@ -453,4 +456,7 @@ class BreakNode:
         return f"{self.break_token}"
 
     def get_ic(self, get_next_temp_var, get_current_temp):
-        return f'goto {get_current_temp()}\n\n'
+        code = ''
+        code += f'goto {get_next_temp_var()}\n\n'
+        code += f'{get_current_temp()}:\n\n'
+        return code

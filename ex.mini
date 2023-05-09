@@ -32,33 +32,4 @@ FUN get_sum(product)
 END
 
 
-3 * 3
-VAR x = 8
-VAR y = 9
-VAR z = 0
-
-FUN add(a, b) 
-  VAR result = a + b
-  RETURN result
-END
-
-VAR sum = add(x, y)
-
-FUN get_sum(product)
-  VAR product = x * i
-END
-
-IF sum > 15 THEN
-  VAR x = x + 1
-ELIF sum > 10 THEN
-  VAR product = 0
-ELSE
-  VAR product = 0
-END
-
-WHILE x < 10 THEN
-  VAR x = x + 1
-END
-
-
 
