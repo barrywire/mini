@@ -29,4 +29,3 @@ Developed by [David Kilolo](https://github.com/dgkilolo), [Laurent Namasaka](htt
 python3 run.py
 ```
 
-3. Enter the code to be interpreted in the terminal
