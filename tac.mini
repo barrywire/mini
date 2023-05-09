@@ -11,6 +11,14 @@ END
 VAR sum = add(x, y)
 
 FUN get_sum(product)
-    VAR product = x * i
+  VAR product = x * i
+END
+
+IF sum > 15 THEN
+  VAR x = x + 1
+ELIF sum > 10 THEN
+  VAR product = 0
+ELSE
+  VAR product = 0
 END
 

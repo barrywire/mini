@@ -82,4 +82,4 @@ def run_intermediate_code_generator(fn, text):
     return icg.generate_intermediate_code(), ast.error
 
 
-# TODO: Fix FOR and IF statements in the ICG
+# TODO: Fix FOR statement in the ICG

@@ -208,7 +208,18 @@ class IfNode:
             # Add the ELSE keyword and its statement
             # res += f"{self.else_token}, {self.else_case}"
         return res
-
+    
+    def get_ic(self, get_next_temp_var, get_current_temp):
+        code = ''
+        
+        condition_code = self.cases[0][0].get_ic(get_next_temp_var, get_current_temp)
+        temp_condition_code = get_current_temp()
+        label = get_next_temp_var()
+        body_code = self.cases[0][1].get_ic(get_next_temp_var, get_current_temp)
+        
+        code += f'{condition_code} if t!{temp_condition_code} goto L{label} \n{body_code} goto L{label}\n'
+        
+        return code
 
 class ForNode:
     def __init__(self, var_name_tok, start_value_node, end_value_node, step_value_node, body_node, should_return_null):
