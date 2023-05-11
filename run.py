@@ -1,7 +1,19 @@
 import mini
 import time
+import sys
 
-file_name = 'ex.mini'
+# file_name = 'rand.mini'
+
+# get the file name from the user as a command line argument
+file_name = sys.argv[1]
+if file_name == None:
+    print("No file name provided")
+    exit()
+if file_name[-5:] != ".mini":
+    print("Invalid file name. File name must end with .mini")
+    exit()
+
+
 
 
 def run_lexer():

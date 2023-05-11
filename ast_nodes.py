@@ -221,7 +221,7 @@ class IfNode:
                 code += f'{condition_code} if !t{temp_condition_code} goto L{label} \n{body_code} L{label}:\n'
 
             # Add the ELSE keyword and its statement
-            else_code = self.cases[len(self.cases) - 1][1].get_ic(
+            else_code = self.else_case[0].get_ic(
                 get_next_temp_var, get_current_temp)
             code += f'{else_code}'
         else:
