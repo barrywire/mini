@@ -198,16 +198,64 @@ class IfNode:
     def get_ic(self, get_next_temp_var, get_current_temp):
         code = ''
 
-        condition_code = self.cases[0][0].get_ic(
-            get_next_temp_var, get_current_temp)
-        temp_condition_code = get_current_temp()
-        label = get_next_temp_var()
-        body_code = self.cases[0][1].get_ic(
-            get_next_temp_var, get_current_temp)
+        if self.else_case is not None:
+            # Start with the IF keyword and its condition
+            condition_code = self.cases[0][0].get_ic(
+                get_next_temp_var, get_current_temp)
+            temp_condition_code = get_current_temp()
+            label = get_next_temp_var()
+            body_code = self.cases[0][1].get_ic(
+                get_next_temp_var, get_current_temp)
 
-        code += f'{condition_code} if !t{temp_condition_code} goto L{label} \n{body_code} L{label}:\n'
+            code += f'{condition_code} if !t{temp_condition_code} goto L{label} \n{body_code} L{label}:\n'
 
+            # Add all the ELIF keywords, their conditions, and their statements
+            for case in self.cases[1:]:
+                condition_code = case[0].get_ic(
+                    get_next_temp_var, get_current_temp)
+                temp_condition_code = get_current_temp()
+                label = get_next_temp_var()
+                body_code = case[1].get_ic(
+                    get_next_temp_var, get_current_temp)
+
+                code += f'{condition_code} if !t{temp_condition_code} goto L{label} \n{body_code} L{label}:\n'
+
+            # Add the ELSE keyword and its statement
+            else_code = self.cases[len(self.cases) - 1][1].get_ic(
+                get_next_temp_var, get_current_temp)
+            code += f'{else_code}'
+        else:
+            # Start with the IF keyword and its condition
+            condition_code = self.cases[0][0].get_ic(
+                get_next_temp_var, get_current_temp)
+            temp_condition_code = get_current_temp()
+            label = get_next_temp_var()
+            body_code = self.cases[0][1].get_ic(
+                get_next_temp_var, get_current_temp)
+
+            code += f'{condition_code} if !t{temp_condition_code} goto L{label} \n{body_code} L{label}:\n'
+
+            # Add all the ELIF keywords and their conditions
+            for case in self.cases[1:]:
+                condition_code = case[0].get_ic(
+                    get_next_temp_var, get_current_temp)
+                temp_condition_code = get_current_temp()
+                label = get_next_temp_var()
+                body_code = case[1].get_ic(
+                    get_next_temp_var, get_current_temp)
+
+                code += f'{condition_code} if !t{temp_condition_code} goto L{label} \n{body_code} L{label}:\n'
         return code
+        # condition_code = self.cases[0][0].get_ic(
+        #     get_next_temp_var, get_current_temp)
+        # temp_condition_code = get_current_temp()
+        # label = get_next_temp_var()
+        # body_code = self.cases[0][1].get_ic(
+        #     get_next_temp_var, get_current_temp)
+
+        # code += f'{condition_code} if !t{temp_condition_code} goto L{label} \n{body_code} L{label}:\n'
+
+        # return code
 
 
 class ForNode:
