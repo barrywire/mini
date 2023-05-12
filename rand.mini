@@ -1,9 +1,4 @@
-IF (x + 2) < 8 THEN
-    VAR x = x - 2
-ELSE
-   VAR y = y + 2
-END
 
 WHILE (x / 2) < 8 THEN
-    VAR x = x + 1
+    VAR y = y + 1
 END
