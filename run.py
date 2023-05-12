@@ -2,10 +2,10 @@ import mini
 import time
 import sys
 
-# file_name = 'rand.mini'
+file_name = 'rand.mini'
 
 # get the file name from the user as a command line argument
-file_name = sys.argv[1]
+#file_name = sys.argv[1]
 if file_name == None:
     print("No file name provided")
     exit()
